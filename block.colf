@@ -1,0 +1,45 @@
+package serializebench
+
+type ColferSignedBlock struct {
+	Sig     binary
+	Block ColferBlock
+}
+
+type ColferBlock struct {
+	Head ColferBlockHeader
+	Body ColferBlockBody
+}
+
+type ColferBlockHeader struct {
+	Version uint32
+	Time uint64
+	BkSeq uint64
+	Fee uint64
+	PrevHash binary
+	BodyHash binary
+	UxHash binary
+}
+
+type ColferBlockBody struct {
+	Transactions []ColferTransaction
+}
+
+type ColferTransaction struct {
+	Length uint32
+	Type uint8
+	InnerHash binary
+	Sigs []binary
+	In []binary
+	Out []ColferTransactionOutput
+}
+
+type ColferTransactionOutput struct {
+	Address ColferAddress
+	Coins uint64
+	Hours uint64
+}
+
+type ColferAddress struct {
+	Version uint8
+	Key binary
+}

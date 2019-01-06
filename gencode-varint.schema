@@ -1,0 +1,43 @@
+struct GencodeVarintSignedBlock {
+	Sig [65]byte
+	Block GencodeVarintBlock
+}
+
+struct GencodeVarintBlock {
+	Head GencodeVarintBlockHeader
+	Body GencodeVarintBlockBody
+}
+
+struct GencodeVarintBlockHeader {
+	Version vuint32
+	Time vuint64
+	BkSeq vuint64
+	Fee vuint64
+	PrevHash [32]byte
+	BodyHash [32]byte
+	UxHash [32]byte
+}
+
+struct GencodeVarintBlockBody {
+	Transactions []GencodeVarintTransaction
+}
+
+struct GencodeVarintTransaction {
+	Length vuint32
+	Type vuint8
+	InnerHash [32]byte
+	Sigs [][65]byte
+	In [][32]byte
+	Out []GencodeVarintTransactionOutput
+}
+
+struct GencodeVarintTransactionOutput {
+	Address GencodeVarintAddress
+	Coins vuint64
+	Hours vuint64
+}
+
+struct GencodeVarintAddress {
+	Version vuint8
+	Key [20]byte
+}

@@ -1,0 +1,43 @@
+struct GencodeSignedBlock {
+	Sig [65]byte
+	Block GencodeBlock
+}
+
+struct GencodeBlock {
+	Head GencodeBlockHeader
+	Body GencodeBlockBody
+}
+
+struct GencodeBlockHeader {
+	Version uint32
+	Time uint64
+	BkSeq uint64
+	Fee uint64
+	PrevHash [32]byte
+	BodyHash [32]byte
+	UxHash [32]byte
+}
+
+struct GencodeBlockBody {
+	Transactions []GencodeTransaction
+}
+
+struct GencodeTransaction {
+	Length uint32
+	Type uint8
+	InnerHash [32]byte
+	Sigs [][65]byte
+	In [][32]byte
+	Out []GencodeTransactionOutput
+}
+
+struct GencodeTransactionOutput {
+	Address GencodeAddress
+	Coins uint64
+	Hours uint64
+}
+
+struct GencodeAddress {
+	Version uint8
+	Key [20]byte
+}
