@@ -110,7 +110,7 @@ Varint encoding provides at best an 8% improvement in size.
 A `coin.SignedBlock` is mostly hashes or signatures which do not compress well in general,
 and do not benefit from varint encoding, limiting the potential size gains.
 
-Gencode without varints (except the mandatory varints in variable-length array prefixes) with the transformation step
+Gencode without varints (except the mandatory varints in variable-length array prefixes) without the transformation step
 is the fastest. This is also the most similar to what a code generator for the Skycoin encoder would be.
 So, a code generator for the Skycoin encoder could expect similar performance,
 which is ~23x faster serialization and ~15x faster deserialization, as well as a massive reduction in memory allocations.
