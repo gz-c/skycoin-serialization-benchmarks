@@ -16,6 +16,8 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 )
 
+//go:generate skyencoder -struct SignedBlock -no-test -package serializebench -output-path . github.com/skycoin/skycoin/src/coin
+
 var validate = os.Getenv("VALIDATE") != ""
 
 func getBlock() coin.SignedBlock {
@@ -138,40 +140,45 @@ func getBlock() coin.SignedBlock {
 func TestMarshaledBlockLen(t *testing.T) {
 	log.SetFlags(log.LstdFlags)
 
-	skyBytes := encoder.Serialize(getBlock())
+	block := getBlock()
+
+	skyBytes := encoder.Serialize(block)
 	fmt.Printf("sky:\t\t\t\t %d bytes\n", len(skyBytes))
 
+	skyEncN := EncodeSizeSignedBlock(&block)
+	fmt.Printf("skyenc:\t\t\t\t %d bytes\n", skyEncN)
+
 	var xdrBuf bytes.Buffer
-	if _, err := xdr.Marshal(&xdrBuf, getBlock()); err != nil {
+	if _, err := xdr.Marshal(&xdrBuf, block); err != nil {
 		t.Fatal(err)
 	}
 	fmt.Printf("xdr2:\t\t\t\t %d bytes\n", xdrBuf.Len())
 
-	jsonBytes, err := json.Marshal(getBlock())
+	jsonBytes, err := json.Marshal(block)
 	if err != nil {
 		t.Fatal(err)
 	}
 	fmt.Printf("json:\t\t\t\t %d bytes\n", len(jsonBytes))
 
 	gotinyEnc := gotiny.NewEncoder(coin.SignedBlock{})
-	gotinyBytes := gotinyEnc.Encode(getBlock())
+	gotinyBytes := gotinyEnc.Encode(block)
 	fmt.Printf("tiny:\t\t\t\t %d bytes\n", len(gotinyBytes))
 
-	colferBlock := blockToColfer(getBlock())
+	colferBlock := blockToColfer(block)
 	colferBytes, err := colferBlock.MarshalBinary()
 	if err != nil {
 		t.Fatal(err)
 	}
 	fmt.Printf("colf:\t\t\t\t %d bytes\n", len(colferBytes))
 
-	gencodeBlock := blockToGencode(getBlock())
+	gencodeBlock := blockToGencode(block)
 	gencodeBytes, err := gencodeBlock.Marshal(nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	fmt.Printf("genc:\t\t\t\t %d bytes\n", len(gencodeBytes))
 
-	gencodeVarintBlock := blockToGencodeVarint(getBlock())
+	gencodeVarintBlock := blockToGencodeVarint(block)
 	gencodeVarintBytes, err := gencodeVarintBlock.Marshal(nil)
 	if err != nil {
 		t.Fatal(err)
@@ -209,6 +216,63 @@ func BenchmarkUnmarshalBlockBySky(b *testing.B) {
 		if validate {
 			if !cmp.Equal(result, block) {
 				b.Fatal("sky unmarshal result differs")
+			}
+		}
+	}
+}
+
+/* skyencoder
+
+- Code generator for the reference Skycoin encoder
+*/
+
+func BenchmarkMarshalBlockBySkyencoder(b *testing.B) {
+	block := getBlock()
+	n := EncodeSizeSignedBlock(&block)
+	buf := make([]byte, n)
+
+	b.ResetTimer()
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		EncodeSignedBlock(buf, &block)
+	}
+}
+
+func BenchmarkMarshalBlockBySkyencoderWithAlloc(b *testing.B) {
+	block := getBlock()
+
+	b.ResetTimer()
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		n := EncodeSizeSignedBlock(&block)
+		buf := make([]byte, n)
+		EncodeSignedBlock(buf, &block)
+	}
+}
+
+func BenchmarkUnmarshalBlockBySkyencoder(b *testing.B) {
+	block := getBlock()
+	n := EncodeSizeSignedBlock(&block)
+	raw := make([]byte, n)
+	err := EncodeSignedBlock(raw, &block)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		var result coin.SignedBlock
+		if x, err := DecodeSignedBlock(raw, &result); err != nil {
+			b.Fatal(err)
+		} else if x != len(raw) {
+			b.Fatal("skyencoder: DecodeSignedBlock bytes remain")
+		}
+
+		if validate {
+			if !cmp.Equal(result, block) {
+				b.Fatal("skyencoder unmarshal result differs")
 			}
 		}
 	}

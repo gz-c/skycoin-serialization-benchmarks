@@ -9,7 +9,8 @@ go test -v -bench='.*' ./
 
 ## Serializers benchmarked
 
-* Skycoin encoder https://godoc.org/github.com/skycoin/skycoin/src/cipher/encoder
+* Skycoin encoder (reflect-based) https://godoc.org/github.com/skycoin/skycoin/src/cipher/encoder
+* Skyencoder (generated code) https://github.com/skycoin/skyencoder
 * Gencode (with and without varints) https://github.com/andyleap/gencode
 * Gotiny https://github.com/niubaoshu/gotiny
 * XDR2 https://github.com/davecgh/go-xdr/tree/master/xdr2
@@ -34,6 +35,10 @@ and the program's struct.
 
 This is based upon a simple binary encoding format. It is similar to XDR except that it is little-endian and does not pad to
 4-byte boundaries. It uses reflect-based encoding at runtime.
+
+### Skyencoder
+
+This is the same as the reflect-based Skycoin encoder but generates the code to eliminate reflection and minimize memory allocations.
 
 ### Gencode
 
@@ -67,9 +72,14 @@ This is only included as a reference point. It is not suitable for encoding `coi
 
 MBP Mid 2015 Base Model
 
+```sh
+$ go test . -bench '.*' -v
+```
+
 ```
 === RUN   TestMarshaledBlockLen
 sky:				 1546 bytes
+skyenc:				 1546 bytes
 xdr2:				 1612 bytes
 json:				 5673 bytes
 tiny:				 1423 bytes
@@ -80,28 +90,31 @@ gencvar:			 1421 bytes
 goos: darwin
 goarch: amd64
 pkg: github.com/gz-c/skycoin-serialization-benchmarks
-BenchmarkMarshalBlockBySky-8                          	  100000	     19157 ns/op	    4304 B/op	     186 allocs/op
-BenchmarkUnmarshalBlockBySky-8                        	  100000	     15174 ns/op	    5672 B/op	     131 allocs/op
-BenchmarkMarshalBlockByXDR2-8                         	  100000	     18780 ns/op	    9264 B/op	     177 allocs/op
-BenchmarkUnmarshalBlockByXDR2-8                       	  100000	     20486 ns/op	    5936 B/op	     212 allocs/op
-BenchmarkMarshalBlockByJSON-8                         	   20000	     59035 ns/op	    6374 B/op	       2 allocs/op
-BenchmarkUnmarshalBlockByJSON-8                       	    5000	    320274 ns/op	    6976 B/op	    1305 allocs/op
-BenchmarkMarshalBlockByGotiny-8                       	  200000	      7006 ns/op	     224 B/op	       1 allocs/op
-BenchmarkUnmarshalBlockByGotiny-8                     	  200000	      7147 ns/op	    2192 B/op	      21 allocs/op
-BenchmarkMarshalBlockByColfer-8                       	  300000	      4450 ns/op	    4960 B/op	      70 allocs/op
-BenchmarkUnmarshalBlockByColfer-8                     	  300000	      4665 ns/op	    4832 B/op	      70 allocs/op
-BenchmarkMarshalBlockByColferNoTransform-8            	 2000000	      1010 ns/op	    1536 B/op	       1 allocs/op
-BenchmarkUnmarshalBlockByColferNoTransform-8          	  500000	      3385 ns/op	    3184 B/op	      60 allocs/op
-BenchmarkMarshalBlockByGencode-8                      	  500000	      2381 ns/op	    3408 B/op	      12 allocs/op
-BenchmarkUnmarshalBlockByGencode-8                    	  500000	      2562 ns/op	    3296 B/op	      20 allocs/op
-BenchmarkMarshalBlockByGencodeNoTransform-8           	 2000000	       828 ns/op	    1536 B/op	       1 allocs/op
-BenchmarkUnmarshalBlockByGencodeNoTransform-8         	 1000000	      1021 ns/op	    1648 B/op	      10 allocs/op
-BenchmarkMarshalBlockByGencodeVarint-8                	  500000	      2992 ns/op	    3408 B/op	      12 allocs/op
-BenchmarkUnmarshalBlockByGencodeVarint-8              	  500000	      2671 ns/op	    3296 B/op	      20 allocs/op
-BenchmarkMarshalBlockByGencodeVarintNoTransform-8     	 1000000	      1349 ns/op	    1536 B/op	       1 allocs/op
-BenchmarkUnmarshalBlockByGencodeVarintNoTransform-8   	 1000000	      1192 ns/op	    1648 B/op	      10 allocs/op
+BenchmarkMarshalBlockBySky-8                          	  100000	     20653 ns/op	    4304 B/op	     186 allocs/op
+BenchmarkUnmarshalBlockBySky-8                        	  100000	     14662 ns/op	    5672 B/op	     131 allocs/op
+BenchmarkMarshalBlockBySkyencoder-8                   	 5000000	       420 ns/op	       0 B/op	       0 allocs/op
+BenchmarkMarshalBlockBySkyencoderWithAlloc-8          	 2000000	       701 ns/op	    1792 B/op	       1 allocs/op
+BenchmarkUnmarshalBlockBySkyencoder-8                 	 1000000	      1039 ns/op	    1648 B/op	      10 allocs/op
+BenchmarkMarshalBlockByXDR2-8                         	  100000	     16703 ns/op	    9264 B/op	     177 allocs/op
+BenchmarkUnmarshalBlockByXDR2-8                       	  100000	     18757 ns/op	    5936 B/op	     212 allocs/op
+BenchmarkMarshalBlockByJSON-8                         	   20000	     61305 ns/op	    6375 B/op	       2 allocs/op
+BenchmarkUnmarshalBlockByJSON-8                       	    5000	    286629 ns/op	    6976 B/op	    1305 allocs/op
+BenchmarkMarshalBlockByGotiny-8                       	  200000	      6197 ns/op	     224 B/op	       1 allocs/op
+BenchmarkUnmarshalBlockByGotiny-8                     	  200000	      7334 ns/op	    2192 B/op	      21 allocs/op
+BenchmarkMarshalBlockByColfer-8                       	  300000	      4314 ns/op	    4960 B/op	      70 allocs/op
+BenchmarkUnmarshalBlockByColfer-8                     	  300000	      4934 ns/op	    4832 B/op	      70 allocs/op
+BenchmarkMarshalBlockByColferNoTransform-8            	 1000000	      1044 ns/op	    1536 B/op	       1 allocs/op
+BenchmarkUnmarshalBlockByColferNoTransform-8          	  500000	      3682 ns/op	    3184 B/op	      60 allocs/op
+BenchmarkMarshalBlockByGencode-8                      	  500000	      2438 ns/op	    3408 B/op	      12 allocs/op
+BenchmarkUnmarshalBlockByGencode-8                    	  500000	      2469 ns/op	    3296 B/op	      20 allocs/op
+BenchmarkMarshalBlockByGencodeNoTransform-8           	 2000000	       807 ns/op	    1536 B/op	       1 allocs/op
+BenchmarkUnmarshalBlockByGencodeNoTransform-8         	 2000000	      1004 ns/op	    1648 B/op	      10 allocs/op
+BenchmarkMarshalBlockByGencodeVarint-8                	  500000	      2836 ns/op	    3408 B/op	      12 allocs/op
+BenchmarkUnmarshalBlockByGencodeVarint-8              	  500000	      2587 ns/op	    3296 B/op	      20 allocs/op
+BenchmarkMarshalBlockByGencodeVarintNoTransform-8     	 1000000	      1405 ns/op	    1536 B/op	       1 allocs/op
+BenchmarkUnmarshalBlockByGencodeVarintNoTransform-8   	 1000000	      1181 ns/op	    1648 B/op	      10 allocs/op
 PASS
-ok  	github.com/gz-c/skycoin-serialization-benchmarks	33.666s
+ok  	github.com/gz-c/skycoin-serialization-benchmarks	38.815s
 ```
 
 ## Results interpretation
